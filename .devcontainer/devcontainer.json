@@ -1,0 +1,12 @@
+{
+  "name": "OpenCode tutorial",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "onCreateCommand": "bash .devcontainer/setup.sh",
+  "secrets": {
+    "NVIDIA_API_KEY": {
+      "description": "Free key from build.nvidia.com (Get API Key). Optional: without it, use OpenCode's free models for part 1.",
+      "documentationUrl": "https://build.nvidia.com"
+    }
+  },
+  "customizations": {"vscode": {"extensions": ["ms-python.python"]}}
+}
