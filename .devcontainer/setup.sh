@@ -10,3 +10,10 @@ opencode --version
 pip install --quiet -e reasoning_core --no-deps
 pip install --quiet -r reasoning_core/requirements/task-authoring.txt sympy tiktoken
 python -c "from reasoning_core.template import Task; print('reasoning_core ready')"
+
+# Without an NVIDIA key (secret or /connect), new shells use a free OpenCode model instead (no account, rate-limited).
+cat >> "$HOME/.bashrc" <<'RC'
+if [ -z "${NVIDIA_API_KEY:-}" ] && ! grep -qs '"nvidia"' "$HOME/.local/share/opencode/auth.json"; then
+  export OPENCODE_CONFIG_CONTENT='{"model":"opencode/deepseek-v4.1-flash-free"}'
+fi
+RC

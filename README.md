@@ -1,4 +1,4 @@
-# Working with a coding agent: a one-hour tutorial
+# Working with a coding agent: a hands-on tutorial
 
 A practical session for people who will **use** agents, not build them. You drive OpenCode (an open-source coding
 agent, like Claude Code or Codex) by hand, then run it without a human in a loop over many files, see why that
@@ -11,7 +11,7 @@ agent reviews them.
 
 | Part | Time | You do |
 |---|---|---|
-| 0. Setup | before | a free model key, a Codespace (one click) |
+| 0. Setup | before | a Codespace (one click), optionally a free model key |
 | 1. Interactive | 15 min | ask, plan, let it act, undo |
 | 2. Non-interactive, in a loop | 10 min | `opencode run` over several files: what breaks? |
 | 3. A subagent with rules | 15 min | one Markdown file: role, permissions, output format |
@@ -19,14 +19,16 @@ agent reviews them.
 
 ## 0. Setup (before the session, 10 min)
 
-1. **Model key (free, recommended).** Create an account on [build.nvidia.com](https://build.nvidia.com), then
-   **Get API Key**. Never paste a key in a file or a chat. (OpenCode's own free models need no key, but they stop
-   after a few calls without a paid plan: fine for part 1, not for parts 2 to 4.)
-2. **Codespace.** Open **[tinyurl.com/opencode-tutorial](https://tinyurl.com/opencode-tutorial)** (or
-   [codespaces.new/sileod/opencode-tutorial](https://codespaces.new/sileod/opencode-tutorial)), paste the key in
-   the `NVIDIA_API_KEY` field, and click **Create codespace**. The setup installs OpenCode and clones
-   `reasoning_core` (a few minutes). Then type `opencode` in the terminal. If OpenCode does not find the key, type
-   `/connect`, choose NVIDIA and paste it.
+1. **Codespace.** Open **[tinyurl.com/opencode-tutorial](https://tinyurl.com/opencode-tutorial)** (or
+   [codespaces.new/sileod/opencode-tutorial](https://codespaces.new/sileod/opencode-tutorial)) and click
+   **Create codespace**. The setup installs OpenCode and clones `reasoning_core` (a few minutes). Then type
+   `opencode` in the terminal.
+2. **Model.** Without a key, OpenCode uses one of its free models (`opencode/deepseek-v4.1-flash-free`), with no
+   account: enough to try part 1, but it stops after a few minutes of use ("Free usage limit reached").
+   For the loops of parts 2 to 4, a model key is needed, for example a free NVIDIA key: create an account on
+   [build.nvidia.com](https://build.nvidia.com), click **Get API Key**, and paste it in the `NVIDIA_API_KEY`
+   field when you create the Codespace (or later: type `/connect` in OpenCode, choose NVIDIA, then open a new
+   terminal). The model is then `nvidia/nemotron-3.5-lightning-30b-a3b`. Never paste a key in a file or a chat.
 
 Codespaces are free for 60 hours a month with a GitHub account. Delete yours afterwards
 ([github.com/codespaces](https://github.com/codespaces)).

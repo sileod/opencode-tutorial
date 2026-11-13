@@ -1,4 +1,6 @@
-"""Score your reviewer agent on labelled cases: python tools/score.py [cases/dev] [--model nvidia/nvidia/nemotron-3.5-lightning-30b-a3b]
+"""Score your reviewer agent on labelled cases: python tools/score.py [cases/dev] [--model MODEL]
+
+The model defaults to the free NVIDIA endpoint when an NVIDIA key is set (NVIDIA_API_KEY or /connect), else to a free OpenCode model.
 
 For each case, runs `opencode run --agent task-reviewer "Review the file task.py in the current directory."` in a fresh temporary directory outside
 the repository that holds only the agent, the tools and the case renamed task.py, and denies access outside
@@ -18,6 +20,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+NVIDIA_MODEL = "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b"
+FREE_MODEL = "opencode/deepseek-v4.1-flash-free"
 RULES = {"OK", "SUMMARY", "DIFFICULTY", "UNIQUE", "FORMAT", "SCORER", "SHORTCUT", "RNG", "METADATA"}
 
 
@@ -32,7 +36,10 @@ def verdict(text):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("cases", nargs="?", default="cases/dev")
-    ap.add_argument("--model", default="nvidia/nvidia/nemotron-3.5-lightning-30b-a3b")
+    auth = Path.home() / ".local/share/opencode/auth.json"
+    has_key = os.environ.get("NVIDIA_API_KEY") or (auth.exists() and '"nvidia"' in auth.read_text())
+    default_model = NVIDIA_MODEL if has_key else FREE_MODEL
+    ap.add_argument("--model", default=default_model)
     ap.add_argument("--agent", default="task-reviewer")
     ap.add_argument("--timeout", type=int, default=900, help="seconds per case")
     ap.add_argument("--jobs", type=int, default=4, help="cases reviewed in parallel")
