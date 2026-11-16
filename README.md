@@ -35,6 +35,20 @@ agent reviews them.
    Add both as Codespace secrets ([github.com/settings/codespaces](https://github.com/settings/codespaces)),
    then stop and restart it.
 
+**No Codespace?** (no GitHub account, or it does not start) Do the same on your own machine: macOS, Linux, or
+Windows inside WSL (`wsl --install` in PowerShell, then use the Ubuntu terminal). You need `git`, `curl` and
+Python 3.10 or newer.
+
+```bash
+git clone https://github.com/sileod/opencode-tutorial && cd opencode-tutorial
+bash local-setup.sh                                # once: OpenCode, reasoning_core, a .venv (a few minutes)
+export CLASS_API_URL=...  CLASS_API_KEY=...        # only if your teacher gave you these, in every new terminal
+source tools/activate.sh                           # in every new terminal; it prints the model in use
+```
+
+Nothing is installed system-wide (OpenCode goes to `~/.opencode`, Python packages to `.venv`). Run everything from
+this folder, and only on this tutorial's files: the agent can edit and run commands.
+
 Codespaces are free for 60 hours a month with a GitHub account. Delete yours afterwards
 ([github.com/codespaces](https://github.com/codespaces)).
 
@@ -88,9 +102,12 @@ from this specification, then read and fix what it wrote:
 
 - header: a `description`, `mode: all` (so that `opencode run --agent` can use it), and `permission:` that
   **denies** `edit`, `webfetch`, `glob`, `grep`, `list`, and every `bash` command except
-  `python tools/validate_file.py *`, for example:
+  `python tools/validate_file.py *`, the whole header:
 
   ```yaml
+  ---
+  description: Reviews one reasoning_core task file and ends with one VERDICT line
+  mode: all
   permission:
     edit: deny
     webfetch: deny
@@ -100,6 +117,7 @@ from this specification, then read and fix what it wrote:
     bash:
       "*": deny
       "python tools/validate_file.py *": allow
+  ---
   ```
 
 - body: review the one file it is given (run the validator, read the file once, do not search) and end with exactly
@@ -115,6 +133,9 @@ from this specification, then read and fix what it wrote:
   | `SHORTCUT` | can often be answered right by a constant or trivial guess |
   | `RNG` | seeds the global random generator |
   | `METADATA` | stores metadata that is not JSON-serializable |
+
+**Check the file before using it:** it must start with the header between two `---` lines, as in the example
+above. Models often write `mode` and `permission` as plain text in the body instead: there they are not enforced.
 
 Try it interactively (`@task-reviewer Review cases/dev/c05.py`), then in the loop:
 
