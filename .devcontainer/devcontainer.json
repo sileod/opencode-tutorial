@@ -6,7 +6,9 @@
     "NVIDIA_API_KEY": {
       "description": "Free key from build.nvidia.com (Get API Key). Optional: without it, use OpenCode's free models for part 1.",
       "documentationUrl": "https://build.nvidia.com"
-    }
+    },
+    "CLASS_API_URL": {"description": "Only if your teacher gave you one: the class proxy URL (ends with /v1). Leave empty otherwise."},
+    "CLASS_API_KEY": {"description": "Only if your teacher gave you one: the class proxy key. Leave empty otherwise."}
   },
   "customizations": {"vscode": {"extensions": ["ms-python.python"]}}
 }

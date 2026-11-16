@@ -29,6 +29,11 @@ agent reviews them.
    [build.nvidia.com](https://build.nvidia.com), click **Get API Key**, and paste it in the `NVIDIA_API_KEY`
    field when you create the Codespace (or later: type `/connect` in OpenCode, choose NVIDIA, then open a new
    terminal). The model is then `nvidia/nemotron-3.5-lightning-30b-a3b`. Never paste a key in a file or a chat.
+   **In a class where the teacher gives you a URL and a key**, paste them in the `CLASS_API_URL` and
+   `CLASS_API_KEY` fields instead when you create the Codespace (no NVIDIA account needed). The model is then
+   `class/qwen3-coder-30b-a3b-instruct` (`/models` also offers DeepSeek V4 Flash). Already created your Codespace?
+   Add both as Codespace secrets ([github.com/settings/codespaces](https://github.com/settings/codespaces)),
+   then stop and restart it.
 
 Codespaces are free for 60 hours a month with a GitHub account. Delete yours afterwards
 ([github.com/codespaces](https://github.com/codespaces)).
