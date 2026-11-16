@@ -1,3 +1,4 @@
 reasoning_core/
 runs/
 __pycache__/
+.venv/

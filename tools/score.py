@@ -31,6 +31,8 @@ def verdict(text):
     if not lines:
         return None
     found = {r for r in re.findall(r"[A-Z]+", lines[-1]) if r in RULES}
+    if not found:
+        return None  # e.g. "VERDICT: looks fine": not parseable, counted apart
     return found - {"OK"} or {"OK"}
 
 
@@ -95,21 +97,26 @@ def main():
         return verdict(out), time.time() - start
 
     order = {name: i for i, name in enumerate(labels)}
-    caught = missed = alarms = clean = 0
+    caught = missed = alarms = clean = unparsed = 0
     with ThreadPoolExecutor(args.jobs) as pool:
         results = dict(zip(labels, pool.map(review, labels)))
     for name, gold in labels.items():
         got, seconds = results[name]
-        if gold == ["OK"]:
-            clean += 1
+        unparsed += got is None
+        if got is None:
+            ok = False
+            missed += gold != ["OK"]
+        elif gold == ["OK"]:
             ok = got == {"OK"}
             alarms += not ok
         else:
-            ok = bool(got and set(gold) & got)
+            ok = bool(set(gold) & got)
             caught += ok
             missed += not ok
         print(f"{name}  label {','.join(gold):<16} verdict {','.join(sorted(got)) if got else 'none':<20} {'ok' if ok else 'WRONG':<6} {seconds:4.0f} s")
-    print(f"\ndefects caught: {caught}/{caught + missed}   false alarms on clean cases: {alarms}/{clean}")
+    clean = sum(gold == ["OK"] for gold in labels.values())
+    print(f"\ndefects caught: {caught}/{caught + missed}   false alarms on clean cases: {alarms}/{clean}"
+          + (f"   no parseable VERDICT line: {unparsed} (see runs/)" if unparsed else ""))
 
 
 if __name__ == "__main__":
