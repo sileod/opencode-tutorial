@@ -21,7 +21,7 @@ agent reviews them.
 
 1. **Codespace.** Open **[tinyurl.com/opencode-tutorial](https://tinyurl.com/opencode-tutorial)** (or
    [codespaces.new/sileod/opencode-tutorial](https://codespaces.new/sileod/opencode-tutorial)) and click
-   **Create codespace**. The setup installs OpenCode and clones `reasoning_core` (a few minutes). Then type
+   **Create codespace**. The editor may stay blank while it connects: wait for the terminal at the bottom. Then type
    `opencode` in the terminal.
 2. **Model.** Without a key, OpenCode uses one of its free models (`opencode/deepseek-v4.1-flash-free`), with no
    account: enough to try part 1, but it stops after a few minutes of use ("Free usage limit reached").
@@ -66,7 +66,7 @@ Try, in this order:
 2. Type `@` to attach a file: `@cases/dev/c02.py what would make this task too easy?`
 3. Switch to **Build**: `Run python tools/validate_file.py cases/dev/c02.py and explain the result.`
 4. Ask for a change: `Add a one-line docstring to the class in cases/dev/c01.py.` Look at the diff, then type
-   `/undo` to revert it.
+   `/undo` to revert it. Then run `git diff` in a terminal: did it change anything else?
 
 👉 What did the agent do that you did not ask for?
 
@@ -137,7 +137,8 @@ from this specification, then read and fix what it wrote:
 **Check the file before using it:** it must start with the header between two `---` lines, as in the example
 above. Models often write `mode` and `permission` as plain text in the body instead: there they are not enforced.
 
-Try it interactively (`@task-reviewer Review cases/dev/c05.py`), then in the loop:
+Try it interactively: type `@`, pick `task-reviewer` in the menu, then `Review cases/dev/c05.py` (check that the
+answer comes from `task-reviewer`, not from Build). Then in the loop:
 
 ```bash
 for f in cases/dev/c01.py cases/dev/c05.py cases/dev/c10.py; do
@@ -154,7 +155,7 @@ An agent is a model plus a configuration: measure it like a model, on labelled c
 `tools/score.py` is the loop above plus the labels:
 
 ```bash
-python tools/score.py --only c03,c05,c09,c10   # three defects first agents usually miss, one clean file: ~10 min
+python tools/score.py --only c03,c05,c09,c10   # three defects first agents usually miss, one clean file: 1 to 10 min
 ```
 
 It prints, per case, the label, the verdict and the time, then the defects caught and the false alarms. While it
