@@ -15,3 +15,10 @@ python -c "from reasoning_core.template import Task; print('reasoning_core ready
 
 # Model choice in every new shell: see tools/model-env.sh.
 echo ". \"$(pwd)/tools/model-env.sh\"" >> "$HOME/.bashrc"
+# Where to start, shown in every new terminal (students arrive here from the short link, not from the README).
+cat >> "$HOME/.bashrc" <<'MSG'
+echo "OpenCode tutorial. Instructions (open in a browser tab):"
+echo "  guided, 1 hour:  https://github.com/sileod/opencode-tutorial/blob/main/GUIDED.md"
+echo "  full version:    https://github.com/sileod/opencode-tutorial"
+echo "Start the agent: opencode"
+MSG
