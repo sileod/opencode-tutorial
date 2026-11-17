@@ -49,6 +49,17 @@ source tools/activate.sh                           # in every new terminal; it p
 Nothing is installed system-wide (OpenCode goes to `~/.opencode`, Python packages to `.venv`). Run everything from
 this folder, and only on this tutorial's files: the agent can edit and run commands.
 
+**Sandbox on your machine (recommended, Linux, WSL2 and macOS).** Unlike a Codespace, your laptop holds your files.
+`tools/sandbox.sh` opens a shell where OpenCode and everything it runs can read only this folder (not the rest of your
+home folder), write only this folder, and reach only the model APIs, using
+[srt](https://github.com/anthropic-experimental/sandbox-runtime), Anthropic's open-source sandbox runtime (no VM, no
+Docker). It needs Node.js 20 or newer; on Linux and WSL2 also `sudo apt install bubblewrap socat ripgrep`, on macOS
+`brew install ripgrep`. Then, instead of `source tools/activate.sh`:
+
+```bash
+bash tools/sandbox.sh      # a "(sandbox)" shell opens: use opencode as usual, `exit` to leave
+```
+
 Codespaces are free for 60 hours a month with a GitHub account. Delete yours afterwards
 ([github.com/codespaces](https://github.com/codespaces)).
 
