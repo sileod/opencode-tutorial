@@ -1,5 +1,8 @@
 # Working with a coding agent: a hands-on tutorial
 
+> **New to coding agents, or not a programmer?** Follow the **[guided version](GUIDED.md)** (1 hour): the everyday
+> features (modes, undo, permissions, `AGENTS.md`, skills, context) with a hint under each step.
+
 A practical session for people who will **use** agents, not build them. You drive OpenCode (an open-source coding
 agent, like Claude Code or Codex) by hand, then run it without a human in a loop over many files, see why that
 needs an agent with precise rules, write that agent in one Markdown file, measure it and improve it.
@@ -31,7 +34,7 @@ agent reviews them.
    terminal). The model is then `nvidia/nemotron-3.5-lightning-30b-a3b`. Never paste a key in a file or a chat.
    **In a class where the teacher gives you a URL and a key**, paste them in the `CLASS_API_URL` and
    `CLASS_API_KEY` fields instead when you create the Codespace (no NVIDIA account needed). The model is then
-   `class/qwen3-coder-30b-a3b-instruct` (`/models` also offers DeepSeek V4 Flash). Already created your Codespace?
+   `class/deepseek-v4-flash-0731` (`/models` also offers Qwen3 Coder, faster but it sometimes writes a tool call as text and stops). Already created your Codespace?
    Add both as Codespace secrets ([github.com/settings/codespaces](https://github.com/settings/codespaces)),
    then stop and restart it.
 

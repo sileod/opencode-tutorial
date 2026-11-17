@@ -5,6 +5,7 @@ The model defaults to the class proxy when CLASS_API_URL and CLASS_API_KEY are s
 For each case, runs `opencode run --agent task-reviewer "Review the file task.py in the current directory."` in a fresh temporary directory outside
 the repository that holds only the agent, the tools and the case renamed task.py, and denies access outside
 that directory: the agent cannot see the labels.
+A run that ends without a VERDICT line is retried, up to three runs per case.
 Reads the last `VERDICT:` line and compares it with labels.json. A defect case is caught when one of its labels
 is in the verdict; a clean case (OK) is a false alarm when the verdict names any rule. Transcripts go to runs/<case>.txt so you can see
 why a case failed.
@@ -22,7 +23,7 @@ from pathlib import Path
 
 NVIDIA_MODEL = "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b"
 FREE_MODEL = "opencode/deepseek-v4.1-flash-free"
-CLASS_MODEL = "class/qwen3-coder-30b-a3b-instruct"
+CLASS_MODEL = "class/deepseek-v4-flash-0731"
 RULES = {"OK", "SUMMARY", "DIFFICULTY", "UNIQUE", "FORMAT", "SCORER", "SHORTCUT", "RNG", "METADATA"}
 
 
@@ -78,23 +79,31 @@ def main():
         env = {**os.environ, "PWD": str(box), "XDG_DATA_HOME": str(data)}
         time.sleep(5 * (order[name] % args.jobs))  # parallel OpenCode processes can collide when they start together
         start = time.time()
-        for attempt in range(2):
+        out = ""
+        for attempt in range(3):  # at most three runs per case
+            if attempt:
+                shutil.rmtree(data, ignore_errors=True)
+                data.mkdir()
             try:
                 proc = subprocess.run(cmd, cwd=box, env=env, capture_output=True, text=True, timeout=args.timeout)
-                out = proc.stdout
+                run = proc.stdout
                 if proc.returncode != 0:
-                    out += f"\n[score.py: opencode exited with {proc.returncode}]\n{proc.stderr[-2000:]}"
-                    if time.time() - start < 60 and attempt == 0:
-                        time.sleep(10)
-                        continue  # a crash at startup: try once more
+                    run += f"\n[score.py: opencode exited with {proc.returncode}]\n{proc.stderr[-2000:]}"
             except subprocess.TimeoutExpired as e:
-                out = (e.stdout or b"").decode(errors="replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
-                out += f"\n[score.py: timed out after {args.timeout} s]\n"
-            break
+                run = (e.stdout or b"").decode(errors="replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
+                out += run + f"\n[score.py: timed out after {args.timeout} s]\n"
+                break  # a slow model: retrying would only double the wait
+            out += run
+            if verdict(run) is not None or attempt == 2:
+                break
+            # No VERDICT line: often the model wrote its tool call as text (<function=...>) and stopped, or
+            # opencode crashed at startup. Both are flukes, so run the case again from scratch.
+            out += f"\n[score.py: no VERDICT line, run {attempt + 2} of 3]\n"
+            time.sleep(5)
         (here / "runs" / name.replace(".py", ".txt")).write_text(out)
         shutil.rmtree(box, ignore_errors=True)
         shutil.rmtree(data, ignore_errors=True)
-        return verdict(out), time.time() - start
+        return verdict(run), time.time() - start
 
     order = {name: i for i, name in enumerate(labels)}
     caught = missed = alarms = clean = unparsed = 0
