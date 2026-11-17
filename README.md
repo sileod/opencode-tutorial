@@ -52,7 +52,7 @@ this folder, and only on this tutorial's files: the agent can edit and run comma
 **Sandbox on your machine (recommended, Linux, WSL2 and macOS).** Unlike a Codespace, your laptop holds your files.
 `tools/sandbox.sh` opens a shell where OpenCode and everything it runs can read only this folder (not the rest of your
 home folder), write only this folder, and reach only the model APIs, using
-[srt](https://github.com/anthropic-experimental/sandbox-runtime), Anthropic's open-source sandbox runtime (no VM, no
+[srt](https://github.com/anthropics/sandbox-runtime), Anthropic's open-source sandbox runtime (no VM, no
 Docker). It needs Node.js 20 or newer; on Linux and WSL2 also `sudo apt install bubblewrap socat ripgrep`, on macOS
 `brew install ripgrep`. Then, instead of `source tools/activate.sh`:
 
