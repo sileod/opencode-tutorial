@@ -13,7 +13,7 @@ curl -fsSL https://opencode.ai/install | bash -s -- --version "$OPENCODE_VERSION
 
 [ -d reasoning_core ] || git clone --depth 1 https://github.com/sileod/reasoning-core reasoning_core
 [ -d .venv ] || "$PY" -m venv .venv
-.venv/bin/pip install --quiet -e reasoning_core --no-deps
+echo "$(pwd)/reasoning_core" > "$(.venv/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')/reasoning_core.pth"
 .venv/bin/pip install --quiet -r reasoning_core/requirements/task-authoring.txt sympy tiktoken
 .venv/bin/python -c "from reasoning_core.template import Task; print('reasoning_core ready')"
 echo "Done. In every new terminal, from this folder:  source tools/activate.sh"
