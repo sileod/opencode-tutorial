@@ -20,6 +20,10 @@ agent reviews them.
 | 3. A subagent with rules | 15 min | one Markdown file: role, permissions, output format |
 | 4. Measure and improve | 15 min | score it on labelled cases, change one thing, score again |
 
+**NLP course, TP4 (from an API call to an agent).** Start with the notebook
+[`part1-api.ipynb`](part1-api.ipynb) (30 min): one call to a model through an API, a spelling-error detector with a
+strict JSON output, and its precision and recall. Then do sections 1 to 4 below: the same pattern, with an agent.
+
 ## 0. Setup (before the session, 10 min)
 
 1. **Codespace.** Open **[tinyurl.com/opencode-tutorial](https://tinyurl.com/opencode-tutorial)** (or

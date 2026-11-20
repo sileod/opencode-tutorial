@@ -10,7 +10,7 @@ opencode --version
 # Make reasoning_core importable with a path file (instant); `pip install -e` took ~45 s for the same result.
 echo "$(pwd)/reasoning_core" > "$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')/reasoning_core.pth" \
   || pip install --quiet -e reasoning_core --no-deps
-pip install --quiet -r reasoning_core/requirements/task-authoring.txt sympy tiktoken
+pip install --quiet -r reasoning_core/requirements/task-authoring.txt sympy tiktoken openai ipykernel
 python -c "from reasoning_core.template import Task; print('reasoning_core ready')"
 
 # Model choice in every new shell: see tools/model-env.sh.
