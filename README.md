@@ -15,14 +15,15 @@ agent reviews them.
 | Part | Time | You do |
 |---|---|---|
 | 0. Setup | before | install on your machine, a free model key (10 min) |
-| 1. Interactive | 15 min | ask, plan, let it act, undo |
-| 2. Non-interactive, in a loop | 10 min | `opencode run` over several files: what breaks? |
-| 3. A subagent with rules | 15 min | one Markdown file: role, permissions, output format |
-| 4. Measure and improve | 15 min | score it on labelled cases, change one thing, score again |
+| 1. Drive it | 15 min | ask, plan, let it act, check the diff, undo |
+| 2. Memory and skills | 15 min | `AGENTS.md`, a reusable skill |
+| 3. Context and cost | 10 min | its reasoning, `/compact`, what a run costs |
+| 4. A subagent in a loop | 15 min | one Markdown file: role, permissions, output format; run it over files |
+| 5. Measure and improve | 15 min | score it on labelled cases, change one thing, score again |
 
 **NLP course, TP4 (from an API call to an agent).** Start with the notebook
 [`part1-api.ipynb`](part1-api.ipynb) (30 min; `jupyter lab part1-api.ipynb` after the setup below): one call to a model through an API, a spelling-error detector with a
-strict JSON output, and its precision and recall. Then do sections 1 to 4 below: the same pattern, with an agent.
+strict JSON output, and its precision and recall. Then do sections 1 to 5 below: the same pattern, with an agent.
 
 ## 0. Setup (at home, before the session, 10 min)
 
@@ -44,33 +45,75 @@ Ctrl+C. Never paste a key in a file or a chat.
 The agent edits files and runs commands as you: run it in this folder only. For your own projects, consider a
 sandbox (`tools/sandbox.sh` is an example).
 
-## 1. Interactive (15 min)
+## 1. Drive it (15 min)
 
-OpenCode has two main agents; **Tab** switches between them (shown at the bottom of the screen).
+Start `opencode` in this folder. **Tab** switches between its two main agents (shown at the bottom):
 
-- **Plan** reads and answers, but does not modify files.
-- **Build** may edit files and run commands.
-
-Try, in this order:
+- **Plan** reads and answers. It should not modify files, but it can still run commands: watch them.
+- **Build** may edit files and run commands, without asking.
 
 1. In **Plan**: `What does reasoning_core/reasoning_core/tasks/generated/dynamic_programming.py generate? Explain its apply_difficulty.`
-   Watch the tool calls it makes (reading files) before it answers.
+   Watch the tool calls (files read, commands run) before the answer.
 2. Type `@` to attach a file: `@cases/dev/c02.py what would make this task too easy?`
-3. Switch to **Build**: `Run python tools/validate_file.py cases/dev/c02.py and explain the result.`
-4. Ask for a change: `Add a one-line docstring to the class in cases/dev/c01.py.` Look at the diff, then type
-   `/undo` to revert it. Then run `git diff` in a terminal: did it change anything else?
+3. In **Build**: `Run python tools/validate_file.py cases/dev/c02.py and explain the result.`
+4. Still in Build: `Add a one-line docstring to the class in cases/dev/c01.py.` Look at the diff, type `/undo`, then
+   run `git status` in another terminal.
 
-👉 What did the agent do that you did not ask for?
+👉 What did the agent do that you did not ask for? (Agents often "fix" things on their way: always check
+`git status` and `git diff`, and `git checkout .` puts everything back.)
 
-## 2. Non-interactive, in a loop (10 min)
+## 2. Memory and skills (15 min)
 
-The same agent runs without the interface, from a script: one prompt in, the transcript out.
+Every conversation starts from zero. Two files change that.
+
+**`AGENTS.md`**, at the root of a project, is read at the start of every conversation (Claude Code calls it
+`CLAUDE.md`): how to run the tests, the conventions, the traps. Try it:
 
 ```bash
-opencode run "Review cases/dev/c05.py against reasoning_core/TASK_AUTHORING_GUIDE.md. Is it correct?"
+echo "Always answer in French, in at most five lines." > AGENTS.md
 ```
 
-So it can be **looped**, e.g. over every task file, every night, on every pull request:
+Restart OpenCode and ask (in Plan): `What does cases/dev/c09.py generate?` The answer comes in French.
+
+**A skill** is a procedure written once and loaded only when a request matches its description (skills work the
+same way in Claude Code and Codex). Create `.opencode/skills/explain-task/SKILL.md` with any editor:
+
+```markdown
+---
+name: explain-task
+description: Explain a task file from cases/dev to someone who does not program
+---
+
+Read the file once, then answer in three short parts, with no code:
+1. **What it generates**: one sentence.
+2. **A tiny example**: a made-up question and its answer.
+3. **What could go wrong**: one sentence.
+```
+
+Restart OpenCode, then: `Explain cases/dev/c01.py to my grandmother.` You should see a line `Skill "explain-task"`,
+then the three parts. Add a fourth part to the skill and ask about `c07.py`.
+
+👉 When is `AGENTS.md` read, and when is a skill read? What would you put in each for your project?
+
+## 3. Context and cost (10 min)
+
+Everything in the conversation (your messages, files read, command outputs) is sent to the model again at every
+step: this is the **context**. It has a maximum size, it costs tokens, and the longer it gets, the worse the model
+follows it.
+
+1. **Its reasoning.** `opencode run --thinking "Is cases/dev/c10.py correct? Answer in one line."` shows the thinking
+   blocks before the answer. Run it again with `--variant high`: does it think longer? Is the answer better?
+2. **Compaction.** In the interface, after a few questions, type `/compact` (the conversation is replaced by a
+   summary), then ask `What did we do so far?`. `/new` starts a fresh conversation.
+3. **Cost.** `opencode stats --project ""` shows the tokens used in this folder (NVIDIA's free endpoint costs you
+   nothing). Even `Say hi` sends over 10,000 input tokens: OpenCode's instructions and tool descriptions.
+
+👉 How many tokens did one review of a task file take? At $2 per million input tokens and $10 per million output
+tokens (a frontier model), what would reviewing 1,000 files cost? When should you `/compact`, and when `/new`?
+
+## 4. A subagent in a loop (15 min)
+
+The same agent runs without the interface, from a script, so it can be looped over files:
 
 ```bash
 for f in cases/dev/c01.py cases/dev/c05.py cases/dev/c10.py; do
@@ -78,23 +121,13 @@ for f in cases/dev/c01.py cases/dev/c05.py cases/dev/c10.py; do
 done
 ```
 
-(It takes a few minutes: read the first answers while the next run.) Then run `git status`.
+👉 Could a program use these answers? Look at their length and form, what the agent read or ran, and `git status`.
 
-👉 Could a program use these answers? Look at the length and form of each answer, what the agent decided to read
-or run, how long it took, and whether it changed any file. Nobody was there to say no.
+To loop an agent, specify it like a function: a role, rules, a fixed output and permissions that hold when nobody
+watches. That is a **subagent**, one Markdown file in `.opencode/agents/` ([docs](https://opencode.ai/docs/agents/)).
+Ask OpenCode (in Build) to write `.opencode/agents/task-reviewer.md` from this specification, then read and fix it:
 
-To loop an agent, its job must be specified like a function: a fixed role, fixed rules, a fixed output that a
-program can parse, and permissions that hold when nobody watches. That is a **subagent**.
-
-## 3. A subagent with rules (15 min)
-
-A subagent is configured in one Markdown file, `.opencode/agents/<name>.md` ([docs](https://opencode.ai/docs/agents/)): a header (its description and
-permissions) and instructions as the body. Ask OpenCode (in Build) to write `.opencode/agents/task-reviewer.md`
-from this specification, then read and fix what it wrote:
-
-- header: a `description`, `mode: all` (so that `opencode run --agent` can use it), and `permission:` that
-  **denies** `edit`, `webfetch`, `glob`, `grep`, `list`, and every `bash` command except
-  `python tools/validate_file.py *`, the whole header:
+- the header, exactly this (permissions are enforced by OpenCode):
 
   ```yaml
   ---
@@ -112,58 +145,50 @@ from this specification, then read and fix what it wrote:
   ---
   ```
 
-- body: review the one file it is given (run the validator, read the file once, do not search) and end with exactly
-  one line `VERDICT: OK` or `VERDICT: RULE1, RULE2`, with these rules:
+- the body: review the one file it is given (run the validator, read the file once, do not search), and end with
+  exactly one plain line, `VERDICT: OK` or `VERDICT: RULE1, RULE2`, with these rules:
 
   | Rule | The task file ... |
   |---|---|
   | `SUMMARY` | has no `summary`, or one that is not a one-line spec of what it generates |
-  | `DIFFICULTY` | has an `apply_difficulty` that is not monotonic (a knob resets or shrinks at a higher level), branches on the level, or barely changes anything; a ceiling such as `min(0.9, ...)` on a fraction is fine |
   | `UNIQUE` | accepts several correct answers but the prompt gives no rule to pick one |
   | `FORMAT` | has a prompt that does not say what form the answer takes |
-  | `SCORER` | has a `score_answer` that rewards wrong answers or rejects correct ones |
-  | `SHORTCUT` | can often be answered right by a constant or trivial guess |
   | `RNG` | seeds the global random generator |
-  | `METADATA` | stores metadata that is not JSON-serializable |
 
-**Check the file before using it:** it must start with the header between two `---` lines, as in the example
-above. Models often write `mode` and `permission` as plain text in the body instead: there they are not enforced.
-
-Try it interactively: type `@`, pick `task-reviewer` in the menu, then `Review cases/dev/c05.py` (check that the
-answer comes from `task-reviewer`, not from Build). Then in the loop:
+Check the file: the header must be between two `---` lines at the very top (models often write it as plain text,
+where it is not enforced). Then:
 
 ```bash
-for f in cases/dev/c01.py cases/dev/c05.py cases/dev/c10.py; do
+for f in cases/dev/c02.py cases/dev/c05.py cases/dev/c10.py; do
   echo "$f $(opencode run --agent task-reviewer "Review $f" | grep VERDICT)"
 done
 ```
 
-👉 Compare with part 2: one line per file, no edits, no wandering. Which rules are enforced by the harness
-(permissions) and which only requested from the model (the instructions)?
+👉 Which of its rules are enforced by OpenCode, and which are only requested from the model?
 
-## 4. Measure and improve (15 min)
+## 5. Measure and improve (15 min)
 
 An agent is a model plus a configuration: measure it like a model, on labelled cases, with a check it cannot edit.
-`tools/score.py` is the loop above plus the labels:
+`tools/score.py` runs your subagent on each case in a fresh folder without the labels, in parallel:
 
 ```bash
-python tools/score.py --only c03,c05,c09,c10   # three defects first agents usually miss, one clean file: 1 to 10 min
+python tools/score.py --only c02,c03,c05,c09,c10     # four defects and one clean file: about 5 min
 ```
 
-It prints, per case, the label, the verdict and the time, then the defects caught and the false alarms. While it
-runs, read the transcripts in `runs/`. Then **improve the subagent**: change one thing (a rule's wording, an example
-of a defect, the order of the steps), score again, and keep the version that does better. The full dev set
-(`python tools/score.py`, 11 cases) takes about 30 minutes.
+It prints, per case, the label, the verdict and the time, then the defects caught and the false alarms; the
+transcripts are in `runs/`. Read the misses, change **one** thing in the subagent (a rule's wording, an example of a
+defect, the order of the steps), and score again.
 
-👉 Did your change help, or did it only move the error? What would you need before trusting this reviewer on real
-pull requests?
+👉 Did your change help, or did it only move the error? (Run the same version twice: how much does the score move
+by itself?) What would you need before trusting this reviewer on real pull requests?
 
 ## Take away
 
-- An agent runs as well from a script as in a chat, so it can be looped over thousands of items.
-- Looping needs a specification: a role, rules, a parseable output and permissions, written in one file (a
-  subagent here; the same idea exists in Claude Code, Codex and Cursor).
-- Instructions steer; permissions enforce; measurement on labelled cases tells you whether it works.
+- Watch what the agent does, not only what it says: tool calls, `git diff`, `/undo`.
+- `AGENTS.md` is read every time; a skill when a request matches. Keep the context short: `/compact`, `/new`.
+- Reasoning and context cost tokens; at scale, tokens are the bill.
+- To loop an agent, specify it in one file: role, rules, parseable output, permissions. Instructions steer;
+  permissions enforce; measurement on labelled cases tells you whether it works.
 
 ---
 Cases are task files from reasoning_core (MIT license, © sileod), some with one planted defect.
