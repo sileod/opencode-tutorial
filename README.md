@@ -102,7 +102,8 @@ step: this is the **context**. It has a maximum size, it costs tokens, and the l
 follows it.
 
 1. **Its reasoning.** `opencode run --thinking "Is cases/dev/c10.py correct? Answer in one line."` shows the thinking
-   blocks before the answer. Run it again with `--variant high`: does it think longer? Is the answer better?
+   blocks before the answer. Run it again with `--variant fast` (defined in `opencode.json`: thinking turned off):
+   how long does it take, and is the answer as good?
 2. **Compaction.** In the interface, after a few questions, type `/compact` (the conversation is replaced by a
    summary), then ask `What did we do so far?`. `/new` starts a fresh conversation.
 3. **Cost.** `opencode stats --project ""` shows the tokens used in this folder (NVIDIA's free endpoint costs you
@@ -116,12 +117,10 @@ tokens (a frontier model), what would reviewing 1,000 files cost? When should yo
 The same agent runs without the interface, from a script, so it can be looped over files:
 
 ```bash
-for f in cases/dev/c01.py cases/dev/c05.py cases/dev/c10.py; do
-  echo "=== $f"; opencode run "Review $f against reasoning_core/TASK_AUTHORING_GUIDE.md. Is it correct?"
-done
+opencode run "Review cases/dev/c05.py against reasoning_core/TASK_AUTHORING_GUIDE.md. Is it correct?"
 ```
 
-👉 Could a program use these answers? Look at their length and form, what the agent read or ran, and `git status`.
+👉 Could a program use this answer? Look at its length and form, what the agent read or ran, and `git status`.
 
 To loop an agent, specify it like a function: a role, rules, a fixed output and permissions that hold when nobody
 watches. That is a **subagent**, one Markdown file in `.opencode/agents/` ([docs](https://opencode.ai/docs/agents/)).
@@ -159,9 +158,9 @@ Check the file: the header must be between two `---` lines at the very top (mode
 where it is not enforced). Then:
 
 ```bash
-for f in cases/dev/c02.py cases/dev/c05.py cases/dev/c10.py; do
-  echo "$f $(opencode run --agent task-reviewer "Review $f" | grep VERDICT)"
-done
+for f in cases/dev/c02.py cases/dev/c05.py cases/dev/c10.py; do      # the three run in parallel: 1 to 3 min
+  (echo "$f $(opencode run --agent task-reviewer "Review $f" | grep VERDICT)") &
+done; wait
 ```
 
 👉 Which of its rules are enforced by OpenCode, and which are only requested from the model?
@@ -172,15 +171,16 @@ An agent is a model plus a configuration: measure it like a model, on labelled c
 `tools/score.py` runs your subagent on each case in a fresh folder without the labels, in parallel:
 
 ```bash
-python tools/score.py --only c02,c03,c05,c09,c10     # four defects and one clean file: about 5 min
+python tools/score.py --only c02,c03,c05,c09,c10     # four defects and one clean file: 2 to 4 min
 ```
 
-It prints, per case, the label, the verdict and the time, then the defects caught and the false alarms; the
-transcripts are in `runs/`. Read the misses, change **one** thing in the subagent (a rule's wording, an example of a
-defect, the order of the steps), and score again.
+Each case prints as soon as it is done (label, verdict, time), then the defects caught and the false alarms; the
+transcripts are in `runs/`: read the first ones while the others run. Read the misses, change **one** thing in the
+subagent (a rule's wording, an example of a defect, the order of the steps), and score again.
 
-👉 Did your change help, or did it only move the error? (Run the same version twice: how much does the score move
-by itself?) What would you need before trusting this reviewer on real pull requests?
+👉 Did your change help, or did it only move the error? For scale: one subagent, scored twice without any
+change, caught 3 and then 2 of the 4 defects, and raised a false alarm only the second time. What would you need before trusting this reviewer on real
+pull requests?
 
 ## Take away
 

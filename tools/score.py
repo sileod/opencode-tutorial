@@ -5,7 +5,8 @@ The model defaults to the class proxy when CLASS_API_URL and CLASS_API_KEY are s
 For each case, runs `opencode run --agent task-reviewer "Review the file task.py in the current directory."` in a fresh temporary directory outside
 the repository that holds only the agent, the tools and the case renamed task.py, and denies access outside
 that directory: the agent cannot see the labels.
-A run that ends without a VERDICT line is retried, up to three runs per case.
+A run that ends without a VERDICT line is retried, up to three runs per case; a run is stopped after --timeout seconds.
+Each case is printed as soon as it is done.
 Reads the last `VERDICT:` line and compares it with labels.json. A defect case is caught when one of its labels
 is in the verdict; a clean case (OK) is a false alarm when the verdict names any rule. Transcripts go to runs/<case>.txt so you can see
 why a case failed.
@@ -15,10 +16,11 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import tempfile
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 NVIDIA_MODEL = "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b"
@@ -46,8 +48,9 @@ def main():
     default_model = CLASS_MODEL if class_proxy else NVIDIA_MODEL if has_key else FREE_MODEL
     ap.add_argument("--model", default=default_model)
     ap.add_argument("--agent", default="task-reviewer")
-    ap.add_argument("--timeout", type=int, default=900, help="seconds per case")
-    ap.add_argument("--jobs", type=int, default=4, help="cases reviewed in parallel")
+    ap.add_argument("--timeout", type=int, default=300, help="seconds per case")
+    ap.add_argument("--jobs", type=int, default=5, help="cases reviewed in parallel")
+    ap.add_argument("--variant", help="reasoning effort: low, medium or high (default: the model's)")
     ap.add_argument("--only", help="comma-separated case names to review, e.g. c03,c05")
     args = ap.parse_args()
     cases = Path(args.cases)
@@ -73,24 +76,34 @@ def main():
         (box / "opencode.json").write_text(json.dumps(config, indent=1))
         shutil.copy(cases / name, box / "task.py")
         cmd = ["opencode", "run", "--agent", args.agent, "-m", args.model, "Review the file task.py in the current directory."]
+        if args.variant:
+            cmd[2:2] = ["--variant", args.variant]
         # OpenCode takes its project directory from $PWD, which cwd= does not change. Its own data directory per run,
         # outside the box: parallel runs sharing one session database fail with "database is locked".
         data = Path(tempfile.mkdtemp(prefix="review-data-"))
         env = {**os.environ, "PWD": str(box), "XDG_DATA_HOME": str(data)}
-        time.sleep(5 * (order[name] % args.jobs))  # parallel OpenCode processes can collide when they start together
+        time.sleep(2 * (order[name] % args.jobs))  # parallel OpenCode processes can collide when they start together
         start = time.time()
         out = ""
         for attempt in range(3):  # at most three runs per case
             if attempt:
                 shutil.rmtree(data, ignore_errors=True)
                 data.mkdir()
+            # Own process group, so a timeout kills OpenCode and everything it started (a leftover child holding
+            # the output pipe would otherwise keep the scorer waiting forever).
+            proc = subprocess.Popen(cmd, cwd=box, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                    start_new_session=True)
             try:
-                proc = subprocess.run(cmd, cwd=box, env=env, capture_output=True, text=True, timeout=args.timeout)
-                run = proc.stdout
+                stdout, stderr = proc.communicate(timeout=args.timeout)
+                run = stdout
                 if proc.returncode != 0:
-                    run += f"\n[score.py: opencode exited with {proc.returncode}]\n{proc.stderr[-2000:]}"
-            except subprocess.TimeoutExpired as e:
-                run = (e.stdout or b"").decode(errors="replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
+                    run += f"\n[score.py: opencode exited with {proc.returncode}]\n{stderr[-2000:]}"
+            except subprocess.TimeoutExpired:
+                os.killpg(proc.pid, signal.SIGKILL)
+                try:
+                    run = proc.communicate(timeout=10)[0] or ""
+                except subprocess.TimeoutExpired:
+                    run = ""
                 out += run + f"\n[score.py: timed out after {args.timeout} s]\n"
                 break  # a slow model: retrying would only double the wait
             out += run
@@ -107,22 +120,24 @@ def main():
 
     order = {name: i for i, name in enumerate(labels)}
     caught = missed = alarms = clean = unparsed = 0
+    print(f"Reviewing {len(labels)} cases, {args.jobs} at a time (each line appears when its case is done):", flush=True)
     with ThreadPoolExecutor(args.jobs) as pool:
-        results = dict(zip(labels, pool.map(review, labels)))
-    for name, gold in labels.items():
-        got, seconds = results[name]
-        unparsed += got is None
-        if got is None:
-            ok = False
-            missed += gold != ["OK"]
-        elif gold == ["OK"]:
-            ok = got == {"OK"}
-            alarms += not ok
-        else:
-            ok = bool(set(gold) & got)
-            caught += ok
-            missed += not ok
-        print(f"{name}  label {','.join(gold):<16} verdict {','.join(sorted(got)) if got else 'none':<20} {'ok' if ok else 'WRONG':<6} {seconds:4.0f} s")
+        futures = {pool.submit(review, name): name for name in labels}
+        for future in as_completed(futures):
+            name, gold = futures[future], labels[futures[future]]
+            got, seconds = future.result()
+            unparsed += got is None
+            if got is None:
+                ok = False
+                missed += gold != ["OK"]
+            elif gold == ["OK"]:
+                ok = got == {"OK"}
+                alarms += not ok
+            else:
+                ok = bool(set(gold) & got)
+                caught += ok
+                missed += not ok
+            print(f"{name}  label {','.join(gold):<16} verdict {','.join(sorted(got)) if got else 'none':<20} {'ok' if ok else 'WRONG':<6} {seconds:4.0f} s", flush=True)
     clean = sum(gold == ["OK"] for gold in labels.values())
     print(f"\ndefects caught: {caught}/{caught + missed}   false alarms on clean cases: {alarms}/{clean}"
           + (f"   no parseable VERDICT line: {unparsed} (see runs/)" if unparsed else ""))
