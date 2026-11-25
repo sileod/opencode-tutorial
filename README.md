@@ -31,7 +31,7 @@ The same tools you will use for your own projects. On Windows, first install WSL
 then restart) and type everything below in the Ubuntu terminal.
 
 ```bash
-curl -fsSL https://opencode.ai/install | bash    # OpenCode; then open a new terminal
+curl -fsSL https://opencode.ai/install | bash -s -- --version 1.19.6   # OpenCode; then open a new terminal
 git clone https://github.com/sileod/opencode-tutorial && cd opencode-tutorial
 bash local-setup.sh                              # uv, Python and the packages, in .venv (about a minute)
 source .venv/bin/activate                        # in every new terminal, from this folder
