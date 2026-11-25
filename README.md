@@ -21,36 +21,28 @@ agent reviews them.
 | 4. Measure and improve | 15 min | score it on labelled cases, change one thing, score again |
 
 **NLP course, TP4 (from an API call to an agent).** Start with the notebook
-[`part1-api.ipynb`](part1-api.ipynb) (30 min, on
-[Colab](https://colab.research.google.com/github/sileod/opencode-tutorial/blob/main/part1-api.ipynb) with your
-`NVIDIA_API_KEY` secret from TP3): one call to a model through an API, a spelling-error detector with a
+[`part1-api.ipynb`](part1-api.ipynb) (30 min; `jupyter lab part1-api.ipynb` after the setup below): one call to a model through an API, a spelling-error detector with a
 strict JSON output, and its precision and recall. Then do sections 1 to 4 below: the same pattern, with an agent.
 
 ## 0. Setup (at home, before the session, 10 min)
 
-1. **Install.** On macOS or Linux, open a terminal. On Windows, first install WSL (in PowerShell: `wsl --install`,
-   then restart; it takes a while) and use the Ubuntu terminal. Then:
+The same tools you will use for your own projects. On Windows, first install WSL (in PowerShell: `wsl --install`,
+then restart) and type everything below in the Ubuntu terminal.
 
-   ```bash
-   sudo apt install git curl python3-venv     # Ubuntu/WSL only; macOS has them (or: xcode-select --install)
-   git clone https://github.com/sileod/opencode-tutorial && cd opencode-tutorial
-   bash local-setup.sh                        # once, a few minutes
-   source tools/activate.sh                   # in every new terminal, from this folder
-   ```
+```bash
+curl -fsSL https://opencode.ai/install | bash    # OpenCode; then open a new terminal
+git clone https://github.com/sileod/opencode-tutorial && cd opencode-tutorial
+bash local-setup.sh                              # uv, Python and the packages, in .venv (about a minute)
+source .venv/bin/activate                        # in every new terminal, from this folder
+opencode
+```
 
-2. **Model key.** A free NVIDIA key (NLP course: the one from TP3; otherwise create it on
-   [build.nvidia.com](https://build.nvidia.com), **Get API Key**). Start `opencode`, type `/connect`, choose
-   **NVIDIA**, paste the key, quit with Ctrl+C. Never paste a key in a file or a chat.
-3. **Check.** In a new terminal: `source tools/activate.sh`, then `opencode run "Say hi"`. It should answer.
+In OpenCode, type `/connect`, choose **NVIDIA** and paste your free key (NLP course: the one from TP3; otherwise
+[build.nvidia.com](https://build.nvidia.com), **Get API Key**). Then ask it anything: it should answer. Quit with
+Ctrl+C. Never paste a key in a file or a chat.
 
-Work only in this folder: the agent edits files and runs commands. To confine it to this folder, use
-`bash tools/sandbox.sh` instead of `source tools/activate.sh` (recommended; needs Node.js 20+, and on Linux/WSL
-`sudo apt install bubblewrap socat ripgrep`, on macOS `brew install ripgrep`).
-
-**If your teacher gives you a URL and a key instead,** type `export CLASS_API_URL=...  CLASS_API_KEY=...` before
-`source tools/activate.sh`, in every new terminal. **If the install fails,** use a GitHub Codespace:
-[codespaces.new/sileod/opencode-tutorial](https://codespaces.new/sileod/opencode-tutorial), key in the
-`NVIDIA_API_KEY` field, then type `opencode` in the terminal at the bottom.
+The agent edits files and runs commands as you: run it in this folder only. For your own projects, consider a
+sandbox (`tools/sandbox.sh` is an example).
 
 ## 1. Interactive (15 min)
 
