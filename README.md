@@ -14,61 +14,43 @@ agent reviews them.
 
 | Part | Time | You do |
 |---|---|---|
-| 0. Setup | before | a Codespace (one click), optionally a free model key |
+| 0. Setup | before | install on your machine, a free model key (10 min) |
 | 1. Interactive | 15 min | ask, plan, let it act, undo |
 | 2. Non-interactive, in a loop | 10 min | `opencode run` over several files: what breaks? |
 | 3. A subagent with rules | 15 min | one Markdown file: role, permissions, output format |
 | 4. Measure and improve | 15 min | score it on labelled cases, change one thing, score again |
 
 **NLP course, TP4 (from an API call to an agent).** Start with the notebook
-[`part1-api.ipynb`](part1-api.ipynb) (30 min): one call to a model through an API, a spelling-error detector with a
+[`part1-api.ipynb`](part1-api.ipynb) (30 min, on
+[Colab](https://colab.research.google.com/github/sileod/opencode-tutorial/blob/main/part1-api.ipynb) with your
+`NVIDIA_API_KEY` secret from TP3): one call to a model through an API, a spelling-error detector with a
 strict JSON output, and its precision and recall. Then do sections 1 to 4 below: the same pattern, with an agent.
 
-## 0. Setup (before the session, 10 min)
+## 0. Setup (at home, before the session, 10 min)
 
-1. **Codespace.** Open **[tinyurl.com/opencode-tutorial](https://tinyurl.com/opencode-tutorial)** (or
-   [codespaces.new/sileod/opencode-tutorial](https://codespaces.new/sileod/opencode-tutorial)) and click
-   **Create codespace**. The editor may stay blank while it connects: wait for the terminal at the bottom. Then type
-   `opencode` in the terminal.
-2. **Model.** Without a key, OpenCode uses one of its free models (`opencode/deepseek-v4.1-flash-free`), with no
-   account: enough to try part 1, but it stops after a few minutes of use ("Free usage limit reached").
-   For the loops of parts 2 to 4, a model key is needed, for example a free NVIDIA key: create an account on
-   [build.nvidia.com](https://build.nvidia.com), click **Get API Key**, and paste it in the `NVIDIA_API_KEY`
-   field when you create the Codespace (or later: type `/connect` in OpenCode, choose NVIDIA, then open a new
-   terminal). The model is then `nvidia/nemotron-3.5-lightning-30b-a3b`. Never paste a key in a file or a chat.
-   **In a class where the teacher gives you a URL and a key**, paste them in the `CLASS_API_URL` and
-   `CLASS_API_KEY` fields instead when you create the Codespace (no NVIDIA account needed). The model is then
-   `class/deepseek-v4-flash-0731` (`/models` also offers Qwen3 Coder, faster but it sometimes writes a tool call as text and stops). Already created your Codespace?
-   Add both as Codespace secrets ([github.com/settings/codespaces](https://github.com/settings/codespaces)),
-   then stop and restart it.
+1. **Install.** On macOS or Linux, open a terminal. On Windows, first install WSL (in PowerShell: `wsl --install`,
+   then restart; it takes a while) and use the Ubuntu terminal. Then:
 
-**No Codespace?** (no GitHub account, or it does not start) Do the same on your own machine: macOS, Linux, or
-Windows inside WSL (`wsl --install` in PowerShell, then use the Ubuntu terminal). You need `git`, `curl` and
-Python 3.10 or newer.
+   ```bash
+   sudo apt install git curl python3-venv     # Ubuntu/WSL only; macOS has them (or: xcode-select --install)
+   git clone https://github.com/sileod/opencode-tutorial && cd opencode-tutorial
+   bash local-setup.sh                        # once, a few minutes
+   source tools/activate.sh                   # in every new terminal, from this folder
+   ```
 
-```bash
-git clone https://github.com/sileod/opencode-tutorial && cd opencode-tutorial
-bash local-setup.sh                                # once: OpenCode, reasoning_core, a .venv (a few minutes)
-export CLASS_API_URL=...  CLASS_API_KEY=...        # only if your teacher gave you these, in every new terminal
-source tools/activate.sh                           # in every new terminal; it prints the model in use
-```
+2. **Model key.** A free NVIDIA key (NLP course: the one from TP3; otherwise create it on
+   [build.nvidia.com](https://build.nvidia.com), **Get API Key**). Start `opencode`, type `/connect`, choose
+   **NVIDIA**, paste the key, quit with Ctrl+C. Never paste a key in a file or a chat.
+3. **Check.** In a new terminal: `source tools/activate.sh`, then `opencode run "Say hi"`. It should answer.
 
-Nothing is installed system-wide (OpenCode goes to `~/.opencode`, Python packages to `.venv`). Run everything from
-this folder, and only on this tutorial's files: the agent can edit and run commands.
+Work only in this folder: the agent edits files and runs commands. To confine it to this folder, use
+`bash tools/sandbox.sh` instead of `source tools/activate.sh` (recommended; needs Node.js 20+, and on Linux/WSL
+`sudo apt install bubblewrap socat ripgrep`, on macOS `brew install ripgrep`).
 
-**Sandbox on your machine (recommended, Linux, WSL2 and macOS).** Unlike a Codespace, your laptop holds your files.
-`tools/sandbox.sh` opens a shell where OpenCode and everything it runs can read only this folder (not the rest of your
-home folder), write only this folder, and reach only the model APIs, using
-[srt](https://github.com/anthropics/sandbox-runtime), Anthropic's open-source sandbox runtime (no VM, no
-Docker). It needs Node.js 20 or newer; on Linux and WSL2 also `sudo apt install bubblewrap socat ripgrep`, on macOS
-`brew install ripgrep`. Then, instead of `source tools/activate.sh`:
-
-```bash
-bash tools/sandbox.sh      # a "(sandbox)" shell opens: use opencode as usual, `exit` to leave
-```
-
-Codespaces are free for 60 hours a month with a GitHub account. Delete yours afterwards
-([github.com/codespaces](https://github.com/codespaces)).
+**If your teacher gives you a URL and a key instead,** type `export CLASS_API_URL=...  CLASS_API_KEY=...` before
+`source tools/activate.sh`, in every new terminal. **If the install fails,** use a GitHub Codespace:
+[codespaces.new/sileod/opencode-tutorial](https://codespaces.new/sileod/opencode-tutorial), key in the
+`NVIDIA_API_KEY` field, then type `opencode` in the terminal at the bottom.
 
 ## 1. Interactive (15 min)
 
