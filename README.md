@@ -58,6 +58,8 @@ Start `opencode` in this folder. **Tab** switches between its two main agents (s
 3. In **Build**: `Run python tools/validate_file.py cases/dev/c02.py and explain the result.`
 4. Still in Build: `Add a one-line docstring to the class in cases/dev/c01.py.` Look at the diff, type `/undo`, then
    run `git status` in another terminal.
+5. Put the cases back with `git checkout -- cases/`: sections 4 and 5 score the reviewer on them, so they must stay
+   as they are (in our tests, step 3 sometimes "fixed" `c02.py`).
 
 👉 What did the agent do that you did not ask for? (Agents often "fix" things on their way: always check
 `git status` and `git diff`, and `git checkout .` puts everything back.)
